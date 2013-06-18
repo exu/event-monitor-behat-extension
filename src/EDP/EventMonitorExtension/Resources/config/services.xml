@@ -9,7 +9,6 @@
 
     <services>
         <service id="behat.event_monitor" class="%behat.event_monitor.listener.class%">
-            <argument type="service" id="behat.event_monitor" />
             <tag name="behat.event_subscriber" priority="0" />
         </service>
     </services>
