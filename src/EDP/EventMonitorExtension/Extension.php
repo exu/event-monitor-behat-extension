@@ -53,10 +53,8 @@ class Extension implements ExtensionInterface
                     defaultTrue()->
                 end()->
                 scalarNode('focus')->
-                    defaultFalse()->
                 end()->
                 scalarNode('blur')->
-                    defaulFalse()->
                 end()->
             end()->
         end();
