@@ -48,8 +48,7 @@ default:
 
 ### Settings
 
-Most of the settings are self-evident. **jql** is a query (written in
-JQL) to locate Jira issues that contain Behat features. Example:
+Set which events you want to monitor
 
 ~~~~ {.sourceCode .yaml}
 # behat.yml
