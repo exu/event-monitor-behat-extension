@@ -11,7 +11,7 @@ use Behat\Behat\Event\StepEvent;
  *
  * @author Jacek Wysocki <jacek.wysocki@gmail.com>
  */
-class AfterScenarioListener implements EventSubscriberInterface
+class ScenarioListener implements EventSubscriberInterface
 {
     public function __construct()
     {
