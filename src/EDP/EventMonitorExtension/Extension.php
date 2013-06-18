@@ -1,22 +1,19 @@
 <?php
 /**
- * @copyright 2012 Anthon Pang
- * @license MIT
+ * @copyright Jacek Wysocki <jacek.wysocki@gmail.com>
  */
 
-namespace VIPSoft\JiraExtension;
+namespace EDP\EventMonitorExtension;
 
-use Symfony\Component\Config\FileLocator,
-    Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition,
-    Symfony\Component\DependencyInjection\ContainerBuilder,
-    Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
+use Symfony\Component\Config\FileLocator;
+use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 
 use Behat\Behat\Extension\ExtensionInterface;
 
 /**
- * A Jira Feature Loader extension for Behat
- *
- * @author Anthon Pang <apang@softwaredevelopment.ca>
+ * A event monitor extension
  */
 class Extension implements ExtensionInterface
 {
