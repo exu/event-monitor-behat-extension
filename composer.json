@@ -1,0 +1,25 @@
+{
+    "name": "exu/event-monitor-behat-extension",
+    "version": "0.1.0"
+    "type": "library",
+    "description": "Monitors different javascript events in Mink Selenium based session",
+    "keywords": ["bdd", "behat", "selenium", "events"],
+    "homepage": "http://github.com/exu/",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jacek Wysocki",
+            "email": "jacek.wysocki@gmail.com",
+            "role": "developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.6",
+        "behat/behat": ">=2.4.0,<2.5.0-dev",
+        "symfony/config": ">=2.0.0,<2.3.0",
+        "symfony/dependency-injection": ">=2.0.0,<2.3.0"
+    },
+    "autoload": {
+        "psr-0": { "EDP\\EventMonitorExtension": "src/" }
+    }
+}
