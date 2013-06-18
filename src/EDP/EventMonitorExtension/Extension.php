@@ -23,7 +23,7 @@ class Extension implements ExtensionInterface
     public function load(array $config, ContainerBuilder $container)
     {
         $loader = new XmlFileLoader($container, new FileLocator(__DIR__.'/Resources/config'));
-        $loader->load('core.xml');
+        $loader->load('services.xml');
 
         if (isset($config['clicks'])) {
             $container->setParameter('behat.event_monitor.clicks', $config['clicks']);
