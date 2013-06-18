@@ -1,6 +1,6 @@
 {
     "name": "exu/event-monitor-behat-extension",
-    "version": "0.1.0"
+    "version": "0.1.0",
     "type": "library",
     "description": "Monitors different javascript events in Mink Selenium based session",
     "keywords": ["bdd", "behat", "selenium", "events"],
