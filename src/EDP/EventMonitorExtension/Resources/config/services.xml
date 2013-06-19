@@ -5,11 +5,17 @@
 
     <parameters>
         <parameter key="behat.event_monitor.listener.class">EDP\EventMonitorExtension\EventListener\ScenarioListener</parameter>
+        <parameter key="behat.event_monitor.output_file_type">csv</parameter>
+        <parameter key="behat.event_monitor.output_file_name">log.csv</parameter>
+        <parameter key="behat.event_monitor.debug">false</parameter>
     </parameters>
 
     <services>
         <service id="behat.event_monitor" class="%behat.event_monitor.listener.class%">
-            <tag name="behat.event_subscriber" priority="0" />
+          <argument type="string">%behat.event_monitor.output_file_type%</argument>
+          <argument type="string">%behat.event_monitor.output_file_name%</argument>
+          <argument type="string">%behat.event_monitor.debug%</argument>
+          <tag name="behat.event_subscriber" priority="0" />
         </service>
     </services>
 
