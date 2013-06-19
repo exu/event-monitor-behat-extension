@@ -2,6 +2,7 @@
 namespace EDP\EventMonitorExtension\EventListener;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use EDP\EventMonitorExtension\Writer;
 
 use Behat\Behat\Event\ScenarioEvent;
 use Behat\Behat\Event\StepEvent;
@@ -13,9 +14,19 @@ use Behat\Behat\Event\StepEvent;
  */
 class ScenarioListener implements EventSubscriberInterface
 {
-    public function __construct()
+    protected $debug;
+
+    public function __construct($outputFileType, $outputFileName, $debug)
     {
-        fwrite(STDERR, "Listener init\n");
+        $this->debug = $debug;
+
+        $writerClass = '\\EDP\\EventMonitorExtension\\Writer\\' . ucfirst($outputFileType);
+        if (class_exists($writerClass)) {
+            echo "init writer " . $writerClass . "\n";
+            $this->writer = new Writer\Csv($outputFileName);
+        } else {
+            throw new \Exception('Writer class ' . $writerClass . ' not found');
+        }
     }
 
     /**
@@ -24,22 +35,33 @@ class ScenarioListener implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return array(
-            'beforeSuite' => "test",
+            'beforeSuite' => "beforeSuite",
             'afterSuite' => "afterSuite",
             'beforeFeature' => "test",
             'afterFeature' => "test",
             'beforeScenario' => "test",
             'afterScenario' => "test",
-            'beforeOutlineExample' => "test",
+            'beforeOutlineExample' => "beforeOutlineExample",
             'afterOutlineExample' => "test",
             'beforeStep' => "beforeStep",
             'afterStep' => "afterStep"
         );
     }
 
+
+    public function beforeSuite($event)
+    {
+    }
+
+    public function beforeOutlineExample()
+    {
+        echo " → ";
+    }
+
+
     public function beforeStep($event)
     {
-        /* fwrite(STDERR, "Before step" . "\n"); */
+        /* $this->debug && fwrite(STDERR, "Before step" . "\n"); */
 
         $js = <<<JS
         document.statistics = {};
@@ -58,9 +80,10 @@ class ScenarioListener implements EventSubscriberInterface
         function defaultListener(type) {
             return function(e) {
                 var id = getId(e);
-                var d = document.statistics[type];
-                if(!d[id]) d[id]=0;
-                d[id]++;
+                if(!document.statistics[id]) document.statistics[id] = {};
+                var d = document.statistics[id];
+                if(!d[type]) d[type]=0;
+                d[type]++;
 
                 console.log(id, " " + type);
             }
@@ -70,9 +93,6 @@ class ScenarioListener implements EventSubscriberInterface
         var events = ["input", "change", "click", "focus", "blur", "keyup"], listeners = [];
         for (var i = 0; i < events.length; i++) {
             listeners.push({type: events[i], callback: defaultListener(events[i])});
-            if(!document.statistics[events[i]]) {
-                document.statistics[events[i]] = {};
-            }
         }
 
         r(function(){
@@ -91,44 +111,52 @@ JS;
         $event->getContext()->getSession()->executeScript($js);
     }
 
-    public function afterStep($event)
+    public function afterStep(StepEvent $event)
     {
         $result = $event->getContext()
               ->getSession()
               ->evaluateScript("return document.statistics");
 
         if ($result) {
-            $this->collectResult($event->getSnippet(), $result);
+            $title = $event->getLogicalParent()->getTitle();
+
+            if ($event->getStep() instanceof \Behat\Gherkin\Node\ExampleStepNode) {
+                $subtitle = $event->getStep()->getCleanText();
+            } elseif ($event->getStep() instanceof \Behat\Gherkin\Node\StepNode) {
+                $subtitle = $event->getStep()->getText();
+            } else {
+                $subtitle = 'default';
+            }
+
+            $this->collectResult($title, $subtitle, $result);
         }
 
     }
 
     public function afterSuite($event)
     {
-        fwrite(STDERR, var_export($this->result, 1) . "\n");
-    }
-
-    public function collectResult($event, $result)
-    {
-        if (!isset($event)) {
-            $this->result[$event] = $result;
-        } else {
-            foreach ($result as $event => $ids) {
-                foreach ($ids as $id => $count) {
-                    if (isset($this->result[$event], $this->result[$event][$id])) {
-                        $this->result[$event][$id] += $count;
-                    } else {
-                        $this->result[$event][$id] = $count;
-                    }
-                }
-            }
+        if ($this->result) {
+            $this->debug && fwrite(STDERR, var_export($this->result, 1) . "\n");
         }
     }
 
+    public function collectResult($title, $subtitle = 'default', $result = [])
+    {
+        $data = [date('Y-m-d H:i:s'), $title, $subtitle];
+        foreach ($result as $id => $events) {
+            array_push($data, $id);
+            array_push($data, json_encode($events));
+        }
 
+        $this->debug && fwrite(STDERR, var_export($data, 1) . "\n");
+        $this->writer->write($data);
+
+        $this->result[] = $data;
+        return true;
+    }
 
     public function test($param)
     {
-        /* fwrite(STDERR, var_export(get_class($param), 1) . "\n"); */
+        /* $this->debug && fwrite(STDERR, var_export(get_class($param), 1) . "\n"); */
     }
 }

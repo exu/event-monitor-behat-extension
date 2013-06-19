@@ -38,6 +38,15 @@ class Extension implements ExtensionInterface
         if (isset($config['blur'])) {
             $container->setParameter('behat.event_monitor.blur', $config['blur']);
         }
+        if (isset($config['debug'])) {
+            $container->setParameter('behat.event_monitor.debug', (bool) $config['debug']);
+        }
+        if (isset($config['output_file_type'])) {
+            $container->setParameter('behat.event_monitor.output_file_type', $config['output_file_type']);
+        }
+        if (isset($config['output_file_name'])) {
+            $container->setParameter('behat.event_monitor.output_file_name', $config['output_file_name']);
+        }
     }
 
     /**
@@ -56,6 +65,15 @@ class Extension implements ExtensionInterface
                 scalarNode('focus')->
                 end()->
                 scalarNode('blur')->
+                end()->
+                scalarNode('debug')->
+                    defaultValue(false)->
+                end()->
+                scalarNode('output_file_type')->
+                    defaultValue("csv")->
+                end()->
+                scalarNode('output_file_name')->
+                    defaultValue("out.csv")->
                 end()->
             end()->
         end();
