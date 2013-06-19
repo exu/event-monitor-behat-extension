@@ -1,7 +1,9 @@
-Event Monitor Behat Extension
-=============================
+Event Monitor Behat Extension Experiment
+========================================
 
 The Event monitor Behat extension collects javascript events
+Its not done yet. It is try to tame javasctipts into Behat-Mink-Selenium
+technology.
 
 Installation
 ------------
@@ -35,34 +37,13 @@ $ php composer.phar install
 Configuration
 -------------
 
-Activate extension in your **behat.yml** and define events which you
-want to monitor:
-
 ~~~~ {.sourceCode .yaml}
 # behat.yml
 default:
   # ...
   extensions:
-    EDP\EventMonitorExtension\Extension:
+    EDP\EventMonitorExtension\Extension: ~
 ~~~~
-
-### Settings
-
-Set which events you want to monitor
-
-~~~~ {.sourceCode .yaml}
-# behat.yml
-default:
-  # ...
-  extensions:
-    EDP\JiraExtension\Extension:
-      clicks: true
-      keypresses: true
-      focus: true
-      blur: true
-~~~~
-
-Properies above are mapped to equivalnet javascript events
 
 Source
 ------
