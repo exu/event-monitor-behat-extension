@@ -22,8 +22,7 @@ class ScenarioListener implements EventSubscriberInterface
 
         $writerClass = '\\EDP\\EventMonitorExtension\\Writer\\' . ucfirst($outputFileType);
         if (class_exists($writerClass)) {
-            echo "init writer " . $writerClass . "\n";
-            $this->writer = new Writer\Csv($outputFileName);
+            $this->writer = new $writerClass($outputFileName);
         } else {
             throw new \Exception('Writer class ' . $writerClass . ' not found');
         }
@@ -142,6 +141,9 @@ JS;
 
     public function collectResult($title, $subtitle = 'default', $result = [])
     {
+        /*
+         * @todo design data schema
+         */
         $data = [date('Y-m-d H:i:s'), $title, $subtitle];
         foreach ($result as $id => $events) {
             array_push($data, $id);

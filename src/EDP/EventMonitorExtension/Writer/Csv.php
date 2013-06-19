@@ -15,8 +15,6 @@ class Csv extends AbstractWriter implements WriterInterface
     {
         $fp = fopen($this->fileName, 'a');
 
-        echo $this->arrayDimension($data);
-
         switch ($this->arrayDimension($data)) {
             case 1:
                 fputcsv($fp, $data);
