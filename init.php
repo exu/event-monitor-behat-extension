@@ -10,11 +10,11 @@
  */
 
 spl_autoload_register(function($class) {
-    if (false !== strpos($class, 'VIPSoft\\JiraExtension')) {
+    if (false !== strpos($class, 'EDP\\EventMonitorExtension')) {
         require_once(__DIR__.'/src/'.str_replace('\\', '/', $class).'.php');
 
         return true;
     }
 }, true, false);
 
-return new VIPSoft\JiraExtension\Extension;
+return new EDP\EventMonitorExtension\Extension;
