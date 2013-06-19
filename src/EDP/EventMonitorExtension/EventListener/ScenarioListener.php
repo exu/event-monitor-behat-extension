@@ -35,27 +35,27 @@ class ScenarioListener implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return array(
-            'beforeSuite' => "beforeSuite",
+            'beforeSuite' => "test",
             'afterSuite' => "afterSuite",
-            'beforeFeature' => "test",
+            'beforeFeature' => "beforeFeature",
             'afterFeature' => "test",
-            'beforeScenario' => "test",
+            'beforeScenario' => "beforeScenario",
             'afterScenario' => "test",
-            'beforeOutlineExample' => "beforeOutlineExample",
+            'beforeOutlineExample' => "test",
             'afterOutlineExample' => "test",
             'beforeStep' => "beforeStep",
             'afterStep' => "afterStep"
         );
     }
 
-
-    public function beforeSuite($event)
+    public function beforeFeature($event)
     {
+        fwrite(STDERR, var_export($event->getFeature()->getTags(), 1) . "\n");
     }
 
-    public function beforeOutlineExample()
+    public function beforeScenario($event)
     {
-        echo " → ";
+        fwrite(STDERR, var_export($event->getTags(), 1) . "\n");
     }
 
 
