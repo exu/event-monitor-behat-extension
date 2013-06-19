@@ -6,10 +6,30 @@ namespace EDP\EventMonitorExtension\Writer;
 
 class Csv extends AbstractWriter implements WriterInterface
 {
+    protected function arrayDimension(array $data)
+    {
+        return is_array(reset($data)) ?  $this->arrayDimension(reset($data)) + 1 : 1;
+    }
+
     public function write(array $data)
     {
-        $fp = fopen($this->fileName, 'a+');
-        fputcsv($fp, $data);
+        $fp = fopen($this->fileName, 'a');
+
+        echo $this->arrayDimension($data);
+
+        switch ($this->arrayDimension($data)) {
+            case 1:
+                fputcsv($fp, $data);
+                break;
+            case 2:
+                foreach ($data as $row) {
+                    fputcsv($fp, $row);
+                }
+                break;
+            default:
+                throw new \Exception('Invalid input data array dimension');
+        }
+
         return fclose($fp);
     }
 }
