@@ -67,7 +67,6 @@ class Extension implements ExtensionInterface
                 scalarNode('blur')->
                 end()->
                 scalarNode('debug')->
-                    defaultValue(false)->
                 end()->
                 scalarNode('output_file_type')->
                     defaultValue("csv")->

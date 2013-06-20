@@ -15,17 +15,27 @@ use Behat\Behat\Event\StepEvent;
 class ScenarioListener implements EventSubscriberInterface
 {
     protected $debug;
+    protected $tags = [];
+    protected $featureTags = [];
+    protected $outline = 0;
 
     public function __construct($outputFileType, $outputFileName, $debug)
     {
         $this->debug = $debug;
-
         $writerClass = '\\EDP\\EventMonitorExtension\\Writer\\' . ucfirst($outputFileType);
         if (class_exists($writerClass)) {
             $this->writer = new $writerClass($outputFileName);
         } else {
             throw new \Exception('Writer class ' . $writerClass . ' not found');
         }
+    }
+
+    public function valid()
+    {
+        $valid = in_array("javascript", $this->tags);
+        /* $this->debug && fwrite(STDERR, "Tags are " . ($valid ?: "in") . "valid\n"); */
+        /* $this->debug && fwrite(STDERR, var_export($this->tags, 1) . "\n"); */
+        return $valid;
     }
 
     /**
@@ -38,9 +48,9 @@ class ScenarioListener implements EventSubscriberInterface
             'afterSuite' => "afterSuite",
             'beforeFeature' => "beforeFeature",
             'afterFeature' => "test",
-            'beforeScenario' => "beforeScenario",
+            'beforeScenario' => "test",
             'afterScenario' => "test",
-            'beforeOutlineExample' => "test",
+            'beforeOutlineExample' => "beforeOutlineExample",
             'afterOutlineExample' => "test",
             'beforeStep' => "beforeStep",
             'afterStep' => "afterStep"
@@ -49,24 +59,40 @@ class ScenarioListener implements EventSubscriberInterface
 
     public function beforeFeature($event)
     {
-        fwrite(STDERR, var_export($event->getFeature()->getTags(), 1) . "\n");
+        $this->outline = 0;
+        $this->tags = $event->getFeature()->getTags();
+
+        foreach ($event->getFeature()->getScenarios() as $scenario) {
+            $this->tags = array_unique(array_merge($this->tags, $scenario->getTags()));
+        }
+
+        $this->debug && fwrite(STDERR, "TAGS: " . var_export($this->tags, 1) . "\n");
+        $this->outline = 0;
     }
 
-    public function beforeScenario($event)
+    public function beforeOutlineExample($event)
     {
-        fwrite(STDERR, var_export($event->getTags(), 1) . "\n");
+        $this->outline++;
     }
-
 
     public function beforeStep($event)
     {
+
+        if (!$this->valid()) {
+            return false;
+        }
+
         /* $this->debug && fwrite(STDERR, "Before step" . "\n"); */
 
         $js = <<<JS
+
         document.statistics = {};
 
+        function randr() {
+            return parseInt(Math.random() * 100989898980000);
+        }
 
-        var r = function(f) {
+        function r(f) {
             (/complete|loaded|interactive/.test(document.readyState))
             ? f()
             : setTimeout(ready, 9, f);
@@ -74,33 +100,52 @@ class ScenarioListener implements EventSubscriberInterface
 
         function getId(e) {
             return  e.target.id ? e.target.id : "TAG_"+e.target.tagName;
-        }
+        };
 
         function defaultListener(type) {
-            return function(e) {
+            var randomNumber = randr();
+            var callback = function(e) {
                 var id = getId(e);
                 if(!document.statistics[id]) document.statistics[id] = {};
-                var d = document.statistics[id];
-                if(!d[type]) d[type]=0;
-                d[type]++;
+                if(!document.statistics[id][type]) document.statistics[id][type]=0;
+                document.statistics[id][type]++;
+                console.log(randomNumber + ": " + id, " " + type, document.statistics[id][type]);
+                e.stopPropagation();
+                return true;
+            };
 
-                console.log(id, " " + type);
-            }
-        }
-
-        // attach default listeners
-        var events = ["input", "change", "click", "focus", "blur", "keyup"], listeners = [];
-        for (var i = 0; i < events.length; i++) {
-            listeners.push({type: events[i], callback: defaultListener(events[i])});
-        }
+            return callback;
+        };
 
         r(function(){
+            console.log("Resetting stats and pinning listeners to controls");
+            document.statistics = {};
+            document.eventsAttached = {};
+
+            var counter = 0;
             var elements = document.body.getElementsByTagName("*");
+            var events = ["input", "change", "click", "focus", "blur", "keyup"];
+            var listeners = [];
+
+            for (i in events) {
+                listeners.push({type: events[i], callback: defaultListener(events[i])});
+            }
+
+            var randomNumber = randr();
 
             for(i in elements) {
-                if(elements[i].addEventListener) {
+                if(elements[i].addEventListener && elements[i].id && ["INPUT", "SELECT", "BUTTON"].indexOf(elements[i].tagName) >= 0) {
                     for(j in listeners) {
-                        elements[i].addEventListener(listeners[j].type, listeners[j].callback.bind(elements[i]));
+                        var itemKey = elements[i].tagName+"#"+elements[i].id;
+
+                        //bind event only once in session
+                        if(!document.eventsAttached[itemKey]) document.eventsAttached[itemKey] = [];
+                        if(document.eventsAttached[itemKey].indexOf(listeners[j].type) < 0) {
+                            document.eventsAttached[itemKey].push(listeners[j].type);
+                            elements[i].removeEventListener(listeners[j].type, listeners[j].callback);
+                            elements[i].addEventListener(listeners[j].type, listeners[j].callback);
+                            console.log(randomNumber + "event listener " + listeners[j].type + " attached to: " + elements[i].id, elements[i].tagName);
+                        }
                     }
                 }
             }
@@ -112,15 +157,30 @@ JS;
 
     public function afterStep(StepEvent $event)
     {
+        if (!$this->valid()) {
+            return false;
+        }
+
         $result = $event->getContext()
               ->getSession()
               ->evaluateScript("return document.statistics");
+
+        $event->getContext()
+              ->getSession()
+              ->executeScript("document.statistics = {};");
+
+
+        $events = $event->getContext()
+              ->getSession()
+              ->evaluateScript("return document.eventsAttached");
+
+        $this->debug === 2 && fwrite(STDERR, var_export($events, 1) . "\n");
 
         if ($result) {
             $title = $event->getLogicalParent()->getTitle();
 
             if ($event->getStep() instanceof \Behat\Gherkin\Node\ExampleStepNode) {
-                $subtitle = $event->getStep()->getCleanText();
+                $subtitle = $event->getStep()->getText();
             } elseif ($event->getStep() instanceof \Behat\Gherkin\Node\StepNode) {
                 $subtitle = $event->getStep()->getText();
             } else {
@@ -134,23 +194,23 @@ JS;
 
     public function afterSuite($event)
     {
-        if ($this->result) {
-            $this->debug && fwrite(STDERR, var_export($this->result, 1) . "\n");
+        if ($this->valid() && $this->result) {
+            $this->debug === 2 && fwrite(STDERR, var_export($this->result, 1) . "\n");
         }
     }
 
-    public function collectResult($title, $subtitle = 'default', $result = [])
+    protected function collectResult($title, $subtitle = 'default', $result = [])
     {
         /*
          * @todo design data schema
          */
-        $data = [date('Y-m-d H:i:s'), $title, $subtitle];
+        $data = [date('Y-m-d H:i:s'), $title, $this->outline, $subtitle];
         foreach ($result as $id => $events) {
             array_push($data, $id);
             array_push($data, json_encode($events));
         }
 
-        $this->debug && fwrite(STDERR, var_export($data, 1) . "\n");
+        $this->debug === 2 && fwrite(STDERR, var_export($data, 1) . "\n");
         $this->writer->write($data);
 
         $this->result[] = $data;
@@ -159,6 +219,10 @@ JS;
 
     public function test($param)
     {
-        /* $this->debug && fwrite(STDERR, var_export(get_class($param), 1) . "\n"); */
+        /* if (!$this->valid()) { */
+        /*     return false; */
+        /* } */
+
+        $this->debug === 2 && fwrite(STDERR, var_export(get_class($param), 1) . "\n");
     }
 }
