@@ -91,24 +91,13 @@ class ScenarioListener implements EventSubscriberInterface
 
     public function beforeStep($event)
     {
-        $ttt = $event->getContext()->getSession()->evaluateScript('try { return $.badAss = 1; } catch (e) { return e.message; } ');
-        fwrite(STDERR, var_export($ttt, 1) . "\n");
-
-        $this->attachJavascript($event);
-
-
         if (!$this->valid()) {
             return false;
         }
 
+        $this->attachJavascript($event);
 
-        if ($event->getStep() instanceof \Behat\Gherkin\Node\ExampleStepNode) {
-            $subtitle = $event->getStep()->getText();
-        } elseif ($event->getStep() instanceof \Behat\Gherkin\Node\StepNode) {
-            $subtitle = $event->getStep()->getText();
-        } else {
-            $subtitle = 'default';
-        }
+        $subtitle = $this->getStepText($event);
 
         $this->step++;
 
@@ -180,26 +169,39 @@ JS;
 
     public function jsSnippetLogFunction()
     {
-        $js = <<<JS
-        function log(m, n, fontSize) {
-            var container = document.getElementById("debug_container");
-            if(!fontSize) {
-                fontSize = 9;
-            }
-            if(!container) {
-                var container = document.createElement('div');
-                container.setAttribute('style', 'width: 100%; position:fixed; bottom:0; height:500px; overflow: auto;');
-                container.setAttribute('id', 'debug_container');
-                document.body.appendChild(container);
-            }
 
-            var newdiv = document.createElement('div');
-            newdiv.setAttribute('style', 'font-size:'+fontSize+'px');
-            newdiv.setAttribute('id', 'step{$this->step}');
-            newdiv.innerHTML = m + (n ? " >>>> " + n: "") ;
-            container.appendChild(newdiv);
-        }
+        if ($this->debug) {
+            $js = <<<JS
+
+            function log(m, n, fontSize) {
+                var container = document.getElementById("debug_container");
+                if(!fontSize) {
+                    fontSize = 9;
+                }
+                if(!container) {
+                    var container = document.createElement('div');
+                    container.setAttribute('style', 'width: 100%; position:fixed; bottom:0; height:500px; overflow: auto;');
+                    container.setAttribute('id', 'debug_container');
+                    document.body.appendChild(container);
+                }
+
+                var newdiv = document.createElement('div');
+                newdiv.setAttribute('style', 'font-size:'+fontSize+'px');
+                newdiv.setAttribute('id', 'step{$this->step}');
+                newdiv.innerHTML = m + (n ? " >>>> " + n: "") ;
+                container.appendChild(newdiv);
+            }
 JS;
+            return $js;
+
+        } else {
+            $js = <<<JS
+
+            function log(m, n, fontSize) {
+                return console.log(m,n);
+            }
+JS;
+        }
 
         return $js;
     }
@@ -207,11 +209,12 @@ JS;
     public function attachJavascript($event)
     {
         $js = <<<JS
-
+        // I'm not able to see functions attached in browser
+        // between 2 executeScript method run
         {$this->jsSnippetLogFunction()}
 
         if (window.la) {
-            log('LISTENERS ATTACHED');
+            log('Listeners already attached');
             return true;
         }
 
@@ -258,11 +261,6 @@ JS;
 
 
         r(function(){
-            /* if(document.monitorLoded) { */
-            /*     log("Monitor loaded"); */
-            /*     return false;; */
-            /* } */
-
             log("Resetting stats and pinning listeners to controls");
             window.s = {};
             document.eventsAttached = {};
@@ -277,7 +275,9 @@ JS;
                     }
                 }
             }
+
             log("Adding listeners to : " + elements.length + " listeners");
+
             window.la = true;
         });
 JS;
@@ -317,5 +317,18 @@ JS;
         /* } */
 
         $this->debug === 2 && fwrite(STDERR, var_export(get_class($param), 1) . "\n");
+    }
+
+    public function getStepText($event)
+    {
+        if ($event->getStep() instanceof \Behat\Gherkin\Node\ExampleStepNode) {
+            $subtitle = $event->getStep()->getText();
+        } elseif ($event->getStep() instanceof \Behat\Gherkin\Node\StepNode) {
+            $subtitle = $event->getStep()->getText();
+        } else {
+            $subtitle = 'default';
+        }
+
+        return $subtitle;
     }
 }
