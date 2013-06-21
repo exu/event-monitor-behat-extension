@@ -85,6 +85,8 @@ class ScenarioListener implements EventSubscriberInterface
         $this->outline++;
         $event->getContext()->getSession()->executeScript('document.ttt = 345;');
 
+        $event->getContext()->getSession()->wait(5000);
+
     }
 
     public function beforeStep($event)
@@ -119,15 +121,14 @@ class ScenarioListener implements EventSubscriberInterface
         } catch (e) {
             var jqExists = "JQUERY is dead";
         }
-  var newdiv = document.createElement('div');
-  newdiv.setAttribute('id', 'step{$this->step}');
-  newdiv.innerHTML = "Step {$this->step} {$subtitle} " + jqExists;
-  document.body.appendChild(newdiv);
+
+        {$this->jsSnippetLogFunction()}
+        log("Step {$this->step} {$subtitle} ", jqExists, 14);
 
 JS;
 
         $event->getContext()->getSession()->wait(1000);
-        $ttt = $event->getContext()->getSession()->evaluateScript($js. ';document.ttt = ' . rand(1, 100000) . ' ;');
+        $ttt = $event->getContext()->getSession()->executeScript($js. ';document.ttt = ' . rand(1, 100000) . ' ;');
         fwrite(STDERR, $subtitle . " " . var_export($ttt, 1) . "\n");
 
 
@@ -177,62 +178,42 @@ JS;
 
     }
 
+    public function jsSnippetLogFunction()
+    {
+        $js = <<<JS
+        function log(m, n, fontSize) {
+            var container = document.getElementById("debug_container");
+            if(!fontSize) {
+                fontSize = 9;
+            }
+            if(!container) {
+                var container = document.createElement('div');
+                container.setAttribute('style', 'width: 100%; position:fixed; bottom:0; height:500px; overflow: auto;');
+                container.setAttribute('id', 'debug_container');
+                document.body.appendChild(container);
+            }
 
+            var newdiv = document.createElement('div');
+            newdiv.setAttribute('style', 'font-size:'+fontSize+'px');
+            newdiv.setAttribute('id', 'step{$this->step}');
+            newdiv.innerHTML = m + (n ? " >>>> " + n: "") ;
+            container.appendChild(newdiv);
+        }
+JS;
+
+        return $js;
+    }
 
     public function attachJavascript($event)
     {
         $js = <<<JS
-        function log(m) {
-            var newdiv = document.createElement('pre');
-            newdiv.setAttribute('id', 'step{$this->step}');
-            newdiv.innerHTML = m;
-            document.body.appendChild(newdiv);
+
+        {$this->jsSnippetLogFunction()}
+
+        if (window.la) {
+            log('LISTENERS ATTACHED');
+            return true;
         }
-
-        try {
-            $.guid;
-
-            window.s = {};
-
-            function clickHandler(){
-                log("cccc");
-            }
-
-
-
-            var events = ["input", "change", "click", "focus", "blur", "keyup"];
-
-            function defaultListener(type) {
-                var randomNumber = randr();
-                return function(e) {
-                    var id = getId(e);
-                    if(!window.s[id]) window.s[id] = {};
-                    if(!window.s[id][type]) window.s[id][type] = 0;
-                    window.s[id][type]++;
-                    log(randomNumber + ": " + id, " " + type, window.s[id][type]);
-                    e.stopPropagation();
-                    return true;
-                };
-            };
-
-            var listeners = {};
-            $(events).each(function(e){
-                listeners[e] = defaultListener(e);
-            });
-
-
-
-            $(":input").each(function(){
-                var self = $(this);
-                $(self).on("change", listeners["change"]);
-            });
-        } catch (e) {
-            log(e.message, "No JQuery loaded");
-            return e.message;
-        }
-
-
-        return;
 
         window.s = {};
 
@@ -250,21 +231,25 @@ JS;
             return  e.target.id ? e.target.id : "TAG_"+e.target.tagName;
         };
 
-        function defaultListener(type) {
+        function defaultListener(listenerType) {
+            var type = listenerType;
             var randomNumber = randr();
             return function(e) {
                 var id = getId(e);
                 if(!window.s[id]) window.s[id] = {};
                 if(!window.s[id][type]) window.s[id][type] = 0;
                 window.s[id][type]++;
-                log(randomNumber + ": " + id, " " + type, window.s[id][type]);
+
+                if( window.s[id][type] < 10) {
+                    log(randomNumber + ": " + id + " " + type + " " + window.s[id][type]);
+                }
                 e.stopPropagation();
                 return true;
             };
         };
 
         var elements = document.querySelectorAll("INPUT, SELECT, BUTTON, TEXTAREA");
-        var events = ["input", "change", "click", "focus", "blur", "keyup"];
+        var events = [/* "input",  */"change"/* , "click", "focus", "blur", "keyup" */];
         var listeners = [];
 
         for (i in events) {
@@ -289,15 +274,11 @@ JS;
                     for(j in listeners) {
                         elements[i].removeEventListener(listeners[j].type, listeners[j].callback);
                         elements[i].addEventListener(listeners[j].type, listeners[j].callback);
-                        log("Adding "  + listeners[j].type + " to " + elements[i].id);
                     }
-
-                    elements[i].addEventListener("click", function(e) {log("click", getId(e)); });
-                    elements[i].addEventListener("change", function(e) {log("change", getId(e)); });
-
-                    /* elements[i].addEventListener("click", clickListener); */
                 }
             }
+            log("Adding listeners to : " + elements.length + " listeners");
+            window.la = true;
         });
 JS;
 
