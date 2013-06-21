@@ -7,6 +7,8 @@ use EDP\EventMonitorExtension\Writer;
 use Behat\Behat\Event\ScenarioEvent;
 use Behat\Behat\Event\StepEvent;
 
+use Edp\RedirectBundle\Driver\Selenium2Driver;
+
 /**
  * Scenario event listener
  *
@@ -87,7 +89,7 @@ class ScenarioListener implements EventSubscriberInterface
 
     public function beforeStep($event)
     {
-        $ttt = $event->getContext()->getSession()->evaluateScript('try { return $.guid; } catch (e) { return e.message; } ');
+        $ttt = $event->getContext()->getSession()->evaluateScript('try { return $.badAss = 1; } catch (e) { return e.message; } ');
         fwrite(STDERR, var_export($ttt, 1) . "\n");
 
         $this->attachJavascript($event);
@@ -108,10 +110,18 @@ class ScenarioListener implements EventSubscriberInterface
 
         $this->step++;
 
+        $subtitle = addslashes($subtitle);
+
         $js = <<<JS
+
+        try {
+            var jqExists = $.guid ? "JQUERY Lives":  "JQUERY is dead";
+        } catch (e) {
+            var jqExists = "JQUERY is dead";
+        }
   var newdiv = document.createElement('div');
   newdiv.setAttribute('id', 'step{$this->step}');
-  newdiv.innerHTML = "Step {$this->step}";
+  newdiv.innerHTML = "Step {$this->step} {$subtitle} " + jqExists;
   document.body.appendChild(newdiv);
 
 JS;
@@ -172,6 +182,57 @@ JS;
     public function attachJavascript($event)
     {
         $js = <<<JS
+        function log(m) {
+            var newdiv = document.createElement('pre');
+            newdiv.setAttribute('id', 'step{$this->step}');
+            newdiv.innerHTML = m;
+            document.body.appendChild(newdiv);
+        }
+
+        try {
+            $.guid;
+
+            window.s = {};
+
+            function clickHandler(){
+                log("cccc");
+            }
+
+
+
+            var events = ["input", "change", "click", "focus", "blur", "keyup"];
+
+            function defaultListener(type) {
+                var randomNumber = randr();
+                return function(e) {
+                    var id = getId(e);
+                    if(!window.s[id]) window.s[id] = {};
+                    if(!window.s[id][type]) window.s[id][type] = 0;
+                    window.s[id][type]++;
+                    log(randomNumber + ": " + id, " " + type, window.s[id][type]);
+                    e.stopPropagation();
+                    return true;
+                };
+            };
+
+            var listeners = {};
+            $(events).each(function(e){
+                listeners[e] = defaultListener(e);
+            });
+
+
+
+            $(":input").each(function(){
+                var self = $(this);
+                $(self).on("change", listeners["change"]);
+            });
+        } catch (e) {
+            log(e.message, "No JQuery loaded");
+            return e.message;
+        }
+
+
+        return;
 
         window.s = {};
 
@@ -196,7 +257,7 @@ JS;
                 if(!window.s[id]) window.s[id] = {};
                 if(!window.s[id][type]) window.s[id][type] = 0;
                 window.s[id][type]++;
-                console.log(randomNumber + ": " + id, " " + type, window.s[id][type]);
+                log(randomNumber + ": " + id, " " + type, window.s[id][type]);
                 e.stopPropagation();
                 return true;
             };
@@ -213,11 +274,11 @@ JS;
 
         r(function(){
             /* if(document.monitorLoded) { */
-            /*     console.log("Monitor loaded"); */
+            /*     log("Monitor loaded"); */
             /*     return false;; */
             /* } */
 
-            console.log("Resetting stats and pinning listeners to controls");
+            log("Resetting stats and pinning listeners to controls");
             window.s = {};
             document.eventsAttached = {};
 
@@ -228,11 +289,11 @@ JS;
                     for(j in listeners) {
                         elements[i].removeEventListener(listeners[j].type, listeners[j].callback);
                         elements[i].addEventListener(listeners[j].type, listeners[j].callback);
-                        console.log("Adding "  + listeners[j].type + " to " + elements[i].id);
+                        log("Adding "  + listeners[j].type + " to " + elements[i].id);
                     }
 
-                    elements[i].addEventListener("click", function(e) {console.log("click", getId(e)); });
-                    elements[i].addEventListener("change", function(e) {console.log("change", getId(e)); });
+                    elements[i].addEventListener("click", function(e) {log("click", getId(e)); });
+                    elements[i].addEventListener("change", function(e) {log("change", getId(e)); });
 
                     /* elements[i].addEventListener("click", clickListener); */
                 }
