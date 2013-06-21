@@ -18,6 +18,7 @@ class ScenarioListener implements EventSubscriberInterface
     protected $tags = [];
     protected $featureTags = [];
     protected $outline = 0;
+    protected $step = 0;
 
     public function __construct($outputFileType, $outputFileName, $debug)
     {
@@ -48,7 +49,7 @@ class ScenarioListener implements EventSubscriberInterface
             'afterSuite' => "afterSuite",
             'beforeFeature' => "beforeFeature",
             'afterFeature' => "test",
-            'beforeScenario' => "test",
+            'beforeScenario' => "beforeScenario",
             'afterScenario' => "test",
             'beforeOutlineExample' => "beforeOutlineExample",
             'afterOutlineExample' => "test",
@@ -68,91 +69,60 @@ class ScenarioListener implements EventSubscriberInterface
 
         $this->debug && fwrite(STDERR, "TAGS: " . var_export($this->tags, 1) . "\n");
         $this->outline = 0;
+
     }
+
+    public function beforeScenario($event)
+    {
+        $event->getContext()->getSession()->executeScript('document.ttt = 123;');
+    }
+
 
     public function beforeOutlineExample($event)
     {
         $this->outline++;
+        $event->getContext()->getSession()->executeScript('document.ttt = 345;');
+
     }
 
     public function beforeStep($event)
     {
+        $ttt = $event->getContext()->getSession()->evaluateScript('try { return $.guid; } catch (e) { return e.message; } ');
+        fwrite(STDERR, var_export($ttt, 1) . "\n");
+
+        $this->attachJavascript($event);
+
 
         if (!$this->valid()) {
             return false;
         }
 
-        /* $this->debug && fwrite(STDERR, "Before step" . "\n"); */
 
-        $js = <<<JS
-
-        document.statistics = {};
-
-        function randr() {
-            return parseInt(Math.random() * 100989898980000);
+        if ($event->getStep() instanceof \Behat\Gherkin\Node\ExampleStepNode) {
+            $subtitle = $event->getStep()->getText();
+        } elseif ($event->getStep() instanceof \Behat\Gherkin\Node\StepNode) {
+            $subtitle = $event->getStep()->getText();
+        } else {
+            $subtitle = 'default';
         }
 
-        function r(f) {
-            (/complete|loaded|interactive/.test(document.readyState))
-            ? f()
-            : setTimeout(ready, 9, f);
-        };
+        $this->step++;
 
-        function getId(e) {
-            return  e.target.id ? e.target.id : "TAG_"+e.target.tagName;
-        };
+        $js = <<<JS
+  var newdiv = document.createElement('div');
+  newdiv.setAttribute('id', 'step{$this->step}');
+  newdiv.innerHTML = "Step {$this->step}";
+  document.body.appendChild(newdiv);
 
-        function defaultListener(type) {
-            var randomNumber = randr();
-            var callback = function(e) {
-                var id = getId(e);
-                if(!document.statistics[id]) document.statistics[id] = {};
-                if(!document.statistics[id][type]) document.statistics[id][type]=0;
-                document.statistics[id][type]++;
-                console.log(randomNumber + ": " + id, " " + type, document.statistics[id][type]);
-                e.stopPropagation();
-                return true;
-            };
-
-            return callback;
-        };
-
-        r(function(){
-            console.log("Resetting stats and pinning listeners to controls");
-            document.statistics = {};
-            document.eventsAttached = {};
-
-            var counter = 0;
-            var elements = document.body.getElementsByTagName("*");
-            var events = ["input", "change", "click", "focus", "blur", "keyup"];
-            var listeners = [];
-
-            for (i in events) {
-                listeners.push({type: events[i], callback: defaultListener(events[i])});
-            }
-
-            var randomNumber = randr();
-
-            for(i in elements) {
-                if(elements[i].addEventListener && elements[i].id && ["INPUT", "SELECT", "BUTTON"].indexOf(elements[i].tagName) >= 0) {
-                    for(j in listeners) {
-                        var itemKey = elements[i].tagName+"#"+elements[i].id;
-
-                        //bind event only once in session
-                        if(!document.eventsAttached[itemKey]) document.eventsAttached[itemKey] = [];
-                        if(document.eventsAttached[itemKey].indexOf(listeners[j].type) < 0) {
-                            document.eventsAttached[itemKey].push(listeners[j].type);
-                            elements[i].removeEventListener(listeners[j].type, listeners[j].callback);
-                            elements[i].addEventListener(listeners[j].type, listeners[j].callback);
-                            console.log(randomNumber + "event listener " + listeners[j].type + " attached to: " + elements[i].id, elements[i].tagName);
-                        }
-                    }
-                }
-            }
-        });
 JS;
 
-        $event->getContext()->getSession()->executeScript($js);
+        $event->getContext()->getSession()->wait(1000);
+        $ttt = $event->getContext()->getSession()->evaluateScript($js. ';document.ttt = ' . rand(1, 100000) . ' ;');
+        fwrite(STDERR, $subtitle . " " . var_export($ttt, 1) . "\n");
+
+
+
+        /* $this->debug && fwrite(STDERR, "Before step" . "\n"); */
     }
 
     public function afterStep(StepEvent $event)
@@ -161,18 +131,23 @@ JS;
             return false;
         }
 
+        $ttt = $event->getContext()->getSession()->evaluateScript('d = document.getElementById("step{$this->step}"); if(d) { return d.innerHtml;}');
+        fwrite(STDERR, var_export($ttt, 1) . "\n");
+
+
         $result = $event->getContext()
               ->getSession()
-              ->evaluateScript("return document.statistics");
+              ->evaluateScript("return window.s");
 
-        $event->getContext()
-              ->getSession()
-              ->executeScript("document.statistics = {};");
 
 
         $events = $event->getContext()
               ->getSession()
               ->evaluateScript("return document.eventsAttached");
+
+        /* $event->getContext() */
+        /*       ->getSession() */
+        /*       ->executeScript("window.s = {}; document.eventsAttached = {}"); */
 
         $this->debug === 2 && fwrite(STDERR, var_export($events, 1) . "\n");
 
@@ -190,6 +165,82 @@ JS;
             $this->collectResult($title, $subtitle, $result);
         }
 
+    }
+
+
+
+    public function attachJavascript($event)
+    {
+        $js = <<<JS
+
+        window.s = {};
+
+        function randr() {
+            return parseInt(Math.random() * 100989898980000);
+        }
+
+        function r(f) {
+            (/complete|loaded|interactive/.test(document.readyState))
+            ? f()
+            : setTimeout(ready, 19, f);
+        };
+
+        function getId(e) {
+            return  e.target.id ? e.target.id : "TAG_"+e.target.tagName;
+        };
+
+        function defaultListener(type) {
+            var randomNumber = randr();
+            return function(e) {
+                var id = getId(e);
+                if(!window.s[id]) window.s[id] = {};
+                if(!window.s[id][type]) window.s[id][type] = 0;
+                window.s[id][type]++;
+                console.log(randomNumber + ": " + id, " " + type, window.s[id][type]);
+                e.stopPropagation();
+                return true;
+            };
+        };
+
+        var elements = document.querySelectorAll("INPUT, SELECT, BUTTON, TEXTAREA");
+        var events = ["input", "change", "click", "focus", "blur", "keyup"];
+        var listeners = [];
+
+        for (i in events) {
+            listeners.push({type: events[i], callback: defaultListener(events[i])});
+        }
+
+
+        r(function(){
+            /* if(document.monitorLoded) { */
+            /*     console.log("Monitor loaded"); */
+            /*     return false;; */
+            /* } */
+
+            console.log("Resetting stats and pinning listeners to controls");
+            window.s = {};
+            document.eventsAttached = {};
+
+            var randomNumber = randr();
+
+            for(i in elements) {
+                if(elements[i].addEventListener && elements[i].id) {
+                    for(j in listeners) {
+                        elements[i].removeEventListener(listeners[j].type, listeners[j].callback);
+                        elements[i].addEventListener(listeners[j].type, listeners[j].callback);
+                        console.log("Adding "  + listeners[j].type + " to " + elements[i].id);
+                    }
+
+                    elements[i].addEventListener("click", function(e) {console.log("click", getId(e)); });
+                    elements[i].addEventListener("change", function(e) {console.log("change", getId(e)); });
+
+                    /* elements[i].addEventListener("click", clickListener); */
+                }
+            }
+        });
+JS;
+
+        $event->getContext()->getSession()->executeScript($js);
     }
 
     public function afterSuite($event)
