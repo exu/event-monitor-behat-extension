@@ -30,3 +30,5 @@ class Bootstrap
 }
 
 spl_autoload_register('EDP\Bootstrap::autoload');
+
+require 'vendor/autoload.php';
