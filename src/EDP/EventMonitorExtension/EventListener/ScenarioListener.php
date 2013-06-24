@@ -79,7 +79,7 @@ class ScenarioListener implements EventSubscriberInterface
     {
         $this->outline = 0;
         $this->featureTags = $event->getFeature()->getTags();
-        $this->debug && fwrite(STDERR, "TAGS: " . var_export($this->featureTags, 1) . "\n");
+        $this->debug == 2 && fwrite(STDERR, "TAGS: " . var_export($this->featureTags, 1) . "\n");
     }
 
     public function beforeOutlineExample($event)
@@ -255,7 +255,7 @@ JS;
     public function afterSuite($event)
     {
         if ($this->valid() && $this->result) {
-            $this->debug === 2 && fwrite(STDERR, var_export($this->result, 1) . "\n");
+            $this->debug == 2 && fwrite(STDERR, var_export($this->result, 1) . "\n");
         }
     }
 
@@ -265,7 +265,7 @@ JS;
          * @todo design data schema
          */
         $data = [date('Y-m-d H:i:s'), $title, $this->outline, $subtitle, $this->step, json_encode($result)];
-        $this->debug === 2 && fwrite(STDERR, var_export($data, 1) . "\n");
+        $this->debug == 2 && fwrite(STDERR, var_export($data, 1) . "\n");
         $this->writer->write($data);
         $this->result[] = $data;
         return true;
@@ -277,7 +277,7 @@ JS;
         /*     return false; */
         /* } */
 
-        $this->debug === 2 && fwrite(STDERR, var_export(get_class($param), 1) . "\n");
+        $this->debug == 2 && fwrite(STDERR, var_export(get_class($param), 1) . "\n");
     }
 
     public function getStepText($event)

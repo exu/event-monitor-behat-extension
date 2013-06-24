@@ -45,6 +45,26 @@ default:
     EDP\EventMonitorExtension\Extension: ~
 ~~~~
 
+Configuration
+-------------
+
+Debug level: enable console
+
+~~~~ {.sourceCode .yaml}
+  extensions:
+    EDP\EventMonitorExtension\Extension:
+      debug: true
+~~~~
+
+Debug level: enable shell result feedback
+
+~~~~ {.sourceCode .yaml}
+  extensions:
+    EDP\EventMonitorExtension\Extension:
+      debug: 2
+~~~~
+
+
 Source
 ------
 
