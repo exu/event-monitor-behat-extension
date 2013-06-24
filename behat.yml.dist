@@ -1,7 +1,4 @@
 default:
   extensions:
     EDP\EventMonitorExtension\Extension:
-        clicks: true
-        keypresses: true
-        focus: true
-        blur: true
+        debug: false
