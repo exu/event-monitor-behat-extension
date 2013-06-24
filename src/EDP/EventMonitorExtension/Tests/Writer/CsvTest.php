@@ -10,7 +10,7 @@ class CsvTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        `rm {$this->filename}`;
+        `echo -n > {$this->filename}`;
     }
 
     public function data()
@@ -31,7 +31,7 @@ class CsvTest extends \PHPUnit_Framework_TestCase
     public function testWriting($id, $number, $nick)
     {
         // cleaning test file
-        `echo '' > {$this->filename}`;
+        `echo -n > {$this->filename}`;
 
         $csv = new Csv($this->filename);
         $input = [$id, $number, $nick];
@@ -45,6 +45,8 @@ class CsvTest extends \PHPUnit_Framework_TestCase
 
     public function testWritingMultipleLines()
     {
+        `echo -n > {$this->filename}`;
+
         $csv = new Csv($this->filename);
         $input = [
             ["a", "b"],
@@ -53,8 +55,6 @@ class CsvTest extends \PHPUnit_Framework_TestCase
             ["g", "h"],
         ];
 
-
-        fwrite(STDERR, var_export($input, 1) . "\n");
         $csv->write($input);
 
         if (($handle = fopen($this->filename, "r")) !== false) {
