@@ -31,6 +31,12 @@ class ScenarioListener implements EventSubscriberInterface
         } else {
             throw new \Exception('Writer class ' . $writerClass . ' not found');
         }
+
+        if ($outputFileType == 'csv') {
+            `rm {$outputFileName}`;
+            $data = ['date', 'scenario', 'outline no', 'step', 'step no', 'events'];
+            $this->writer->write($data);
+        }
     }
 
     public function valid()
