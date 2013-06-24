@@ -50,6 +50,15 @@ Source
 
 [Github](https://github.com/exu/event-monitor-behat-extension)
 
+Bonus
+-----
+
+If you enable debug mode your behat will whrow some informations about his workflow.
+
+![Super console outpu with debug mode enabled](http://i2.minus.com/ieTnzdFZzfhAA.png)
+
+
+
 Copyright
 ---------
 
