@@ -25,7 +25,6 @@ class ScenarioListener implements EventSubscriberInterface
     public function __construct($outputFileType, $outputFileName, $debug)
     {
         $this->debug = (int) $debug;
-        fwrite(STDERR, var_export($this->debug, 1) . "\n");
         $writerClass = '\\EDP\\EventMonitorExtension\\Writer\\' . ucfirst($outputFileType);
         if (class_exists($writerClass)) {
             $this->writer = new $writerClass($outputFileName);
