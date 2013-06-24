@@ -41,10 +41,7 @@ class ScenarioListener implements EventSubscriberInterface
 
     public function valid()
     {
-        $valid = in_array("javascript", $this->tags);
-        /* $this->debug && fwrite(STDERR, "Tags are " . ($valid ?: "in") . "valid\n"); */
-        /* $this->debug && fwrite(STDERR, var_export($this->tags, 1) . "\n"); */
-        return $valid;
+        return in_array("javascript", $this->tags);
     }
 
     /**
