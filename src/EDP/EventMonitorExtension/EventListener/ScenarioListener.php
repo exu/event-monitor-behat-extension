@@ -91,33 +91,21 @@ class ScenarioListener implements EventSubscriberInterface
         }
 
         $this->attachJavascript($event);
-
-        $subtitle = $this->getStepText($event);
-
         $this->step++;
-
-        $subtitle = addslashes($subtitle);
+        $subtitle = addslashes($this->getStepText($event));
 
         $js = <<<JS
-
         try {
-            var jqExists = $.guid ? "JQUERY Lives":  "JQUERY is dead";
+            var jqExists = $.guid ? "JQ Enabled":  "JQ is dead";
         } catch (e) {
-            var jqExists = "JQUERY is dead";
+            var jqExists = "JQ is dead";
         }
 
         {$this->jsSnippetLogFunction()}
         log("Step {$this->step} {$subtitle} ", jqExists, 14);
-
 JS;
 
-        $event->getContext()->getSession()->wait(1000);
-        $ttt = $event->getContext()->getSession()->executeScript($js. ';document.ttt = ' . rand(1, 100000) . ' ;');
-        fwrite(STDERR, $subtitle . " " . var_export($ttt, 1) . "\n");
-
-
-
-        /* $this->debug && fwrite(STDERR, "Before step" . "\n"); */
+        $event->getContext()->getSession()->executeScript($js);
     }
 
     public function afterStep(StepEvent $event)
@@ -126,37 +114,13 @@ JS;
             return false;
         }
 
-        $ttt = $event->getContext()->getSession()->evaluateScript('d = document.getElementById("step{$this->step}"); if(d) { return d.innerHtml;}');
-        fwrite(STDERR, var_export($ttt, 1) . "\n");
-
-
         $result = $event->getContext()
               ->getSession()
               ->evaluateScript("return window.s");
 
-
-
-        $events = $event->getContext()
-              ->getSession()
-              ->evaluateScript("return document.eventsAttached");
-
-        /* $event->getContext() */
-        /*       ->getSession() */
-        /*       ->executeScript("window.s = {}; document.eventsAttached = {}"); */
-
-        $this->debug === 2 && fwrite(STDERR, var_export($events, 1) . "\n");
-
         if ($result) {
             $title = $event->getLogicalParent()->getTitle();
-
-            if ($event->getStep() instanceof \Behat\Gherkin\Node\ExampleStepNode) {
-                $subtitle = $event->getStep()->getText();
-            } elseif ($event->getStep() instanceof \Behat\Gherkin\Node\StepNode) {
-                $subtitle = $event->getStep()->getText();
-            } else {
-                $subtitle = 'default';
-            }
-
+            $subtitle = $this->getStepText($event);
             $this->collectResult($title, $subtitle, $result);
         }
 
@@ -175,7 +139,7 @@ JS;
                 }
                 if(!container) {
                     var container = document.createElement('div');
-                    container.setAttribute('style', 'width: 100%; position:fixed; bottom:0; height:500px; overflow: auto;');
+                    container.setAttribute('style', 'width: 100%; position:fixed; bottom:0; height:500px; overflow: auto; background: #111; color: #fff; font-family: monotype');
                     container.setAttribute('id', 'debug_container');
                     document.body.appendChild(container);
                 }
@@ -185,6 +149,7 @@ JS;
                 newdiv.setAttribute('id', 'step{$this->step}');
                 newdiv.innerHTML = m + (n ? " >>>> " + n: "") ;
                 container.appendChild(newdiv);
+                container.scrollTop = container.scrollHeight;
             }
 JS;
             return $js;
@@ -247,7 +212,7 @@ JS;
         };
 
         var elements = document.querySelectorAll("INPUT, SELECT, BUTTON, TEXTAREA");
-        var events = [/* "input",  */"change"/* , "click", "focus", "blur", "keyup" */];
+        var events = ["input",  "change", "click", "focus", "blur", "keyup"];
         var listeners = [];
 
         for (i in events) {
@@ -292,15 +257,9 @@ JS;
         /*
          * @todo design data schema
          */
-        $data = [date('Y-m-d H:i:s'), $title, $this->outline, $subtitle];
-        foreach ($result as $id => $events) {
-            array_push($data, $id);
-            array_push($data, json_encode($events));
-        }
-
+        $data = [date('Y-m-d H:i:s'), $title, $this->outline, $subtitle, $this->step, json_encode($result)];
         $this->debug === 2 && fwrite(STDERR, var_export($data, 1) . "\n");
         $this->writer->write($data);
-
         $this->result[] = $data;
         return true;
     }
