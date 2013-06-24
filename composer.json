@@ -19,6 +19,9 @@
         "symfony/config": ">=2.0.0",
         "symfony/dependency-injection": ">=2.0.0"
     },
+    "require-dev": {
+        "mockery/mockery": "*"
+    },
     "autoload": {
         "psr-0": { "EDP\\EventMonitorExtension": "src/" }
     }
