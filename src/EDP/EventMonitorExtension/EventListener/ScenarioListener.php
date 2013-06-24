@@ -57,7 +57,7 @@ class ScenarioListener implements EventSubscriberInterface
             'afterSuite' => "afterSuite",
             'beforeFeature' => "beforeFeature",
             'afterFeature' => "test",
-            'beforeScenario' => "beforeScenario",
+            'beforeScenario' => "test",
             'afterScenario' => "test",
             'beforeOutlineExample' => "beforeOutlineExample",
             'afterOutlineExample' => "test",
@@ -77,22 +77,11 @@ class ScenarioListener implements EventSubscriberInterface
 
         $this->debug && fwrite(STDERR, "TAGS: " . var_export($this->tags, 1) . "\n");
         $this->outline = 0;
-
     }
-
-    public function beforeScenario($event)
-    {
-        $event->getContext()->getSession()->executeScript('document.ttt = 123;');
-    }
-
 
     public function beforeOutlineExample($event)
     {
         $this->outline++;
-        $event->getContext()->getSession()->executeScript('document.ttt = 345;');
-
-        $event->getContext()->getSession()->wait(5000);
-
     }
 
     public function beforeStep($event)
