@@ -138,7 +138,7 @@ JS;
                 var newdiv = document.createElement('div');
                 newdiv.setAttribute('style', 'font-size:'+fontSize+'px');
                 newdiv.setAttribute('id', 'step{$this->step}');
-                newdiv.innerHTML = m + (n ? " >>>> " + n: "") ;
+                newdiv.innerHTML = m + (n ? " >> " + n: "") ;
                 container.appendChild(newdiv);
                 container.scrollTop = container.scrollHeight;
             }
@@ -187,16 +187,20 @@ JS;
 
         function defaultListener(listenerType) {
             var type = listenerType;
-            var randomNumber = randr();
             return function(e) {
                 var id = getId(e);
                 if(!window.s[id]) window.s[id] = {};
                 if(!window.s[id][type]) window.s[id][type] = 0;
                 window.s[id][type]++;
 
-                if( window.s[id][type] < 10) {
-                    log(randomNumber + ": " + id + " " + type + " " + window.s[id][type]);
+                if(["input", "keyup"].indexOf(type) < 0) {
+                    log(id + " " + type + " " + window.s[id][type]);
                 }
+
+                if(["input", "keyup"].indexOf(type) >= 0 && window.s[id][type] <= 1) {
+                    log(id + " " + type + " " + window.s[id][type] + " and probably more input events");
+                }
+
                 e.stopPropagation();
                 return true;
             };
