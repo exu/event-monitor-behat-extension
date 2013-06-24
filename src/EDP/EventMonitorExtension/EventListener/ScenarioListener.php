@@ -39,6 +39,18 @@ class ScenarioListener implements EventSubscriberInterface
         }
     }
 
+
+    public function getTags()
+    {
+        return $this->tags;
+    }
+
+    public function getResult()
+    {
+        return $this->result;
+    }
+
+
     public function valid(array $tags=[])
     {
         return in_array("javascript", array_merge($this->featureTags, $tags));
