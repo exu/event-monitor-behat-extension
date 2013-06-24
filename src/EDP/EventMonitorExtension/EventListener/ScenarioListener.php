@@ -39,9 +39,9 @@ class ScenarioListener implements EventSubscriberInterface
         }
     }
 
-    public function valid()
+    public function valid(array $tags=[])
     {
-        return in_array("javascript", $this->tags);
+        return in_array("javascript", array_merge($this->featureTags, $tags));
     }
 
     /**
@@ -66,14 +66,8 @@ class ScenarioListener implements EventSubscriberInterface
     public function beforeFeature($event)
     {
         $this->outline = 0;
-        $this->tags = $event->getFeature()->getTags();
-
-        foreach ($event->getFeature()->getScenarios() as $scenario) {
-            $this->tags = array_unique(array_merge($this->tags, $scenario->getTags()));
-        }
-
-        $this->debug && fwrite(STDERR, "TAGS: " . var_export($this->tags, 1) . "\n");
-        $this->outline = 0;
+        $this->featureTags = $event->getFeature()->getTags();
+        $this->debug && fwrite(STDERR, "TAGS: " . var_export($this->featureTags, 1) . "\n");
     }
 
     public function beforeOutlineExample($event)
@@ -83,7 +77,7 @@ class ScenarioListener implements EventSubscriberInterface
 
     public function beforeStep($event)
     {
-        if (!$this->valid()) {
+        if (!$this->valid($event->getLogicalParent()->getTags())) {
             return false;
         }
 
