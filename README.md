@@ -74,6 +74,7 @@ Bonus
 -----
 
 If you enable debug mode your behat will whrow some informations about his workflow.
+Set `debug` to `true` you will enable web console (set to `"2"` to enable shell debug output)
 
 ![Super console outpu with debug mode enabled](http://i2.minus.com/ieTnzdFZzfhAA.png)
 
