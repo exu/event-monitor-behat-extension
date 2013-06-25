@@ -79,7 +79,7 @@ class ScenarioListener implements EventSubscriberInterface
     {
         $this->outline = 0;
         $this->featureTags = $event->getFeature()->getTags();
-        $this->debug == 2 && fwrite(STDERR, "TAGS: " . var_export($this->featureTags, 1) . "\n");
+        $this->debug == 2 && fwrite(STDERR, "TAGS: " . implode(',', $this->featureTags) . "\n");
     }
 
     public function beforeOutlineExample($event)
@@ -273,10 +273,6 @@ JS;
 
     public function test($param)
     {
-        /* if (!$this->valid()) { */
-        /*     return false; */
-        /* } */
-
         $this->debug == 2 && fwrite(STDERR, var_export(get_class($param), 1) . "\n");
     }
 
