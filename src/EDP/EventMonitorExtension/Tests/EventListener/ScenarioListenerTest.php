@@ -13,7 +13,8 @@ class ScenarioListenerTest extends \PHPUnit_Framework_TestCase
         ];
     }
 
-    public function tearDown() {
+    public function tearDown()
+    {
         m::close();
     }
 
@@ -36,7 +37,7 @@ class ScenarioListenerTest extends \PHPUnit_Framework_TestCase
         $parent = m::mock('parentMock', ['getTags' => ["javascript"]]);
         $session = m::mock('sessionMock');
         $session->shouldReceive('executeScript')->times(2);
-        $context = m::mock('contextMock' , ['getSession' => $session]);
+        $context = m::mock('contextMock', ['getSession' => $session]);
         $step = m::mock('\Behat\Gherkin\Node\ExampleStepNode', ['getText' => 'mocked text']);
 
         $event = m::mock('\Behat\Behat\Event\StepEvent');
@@ -54,7 +55,7 @@ class ScenarioListenerTest extends \PHPUnit_Framework_TestCase
         $listener = new ScenarioListener($writerType, $writerFileName, false);
         $session = m::mock('sessionMock');
         $session->shouldReceive('executeScript')->times(1);
-        $context = m::mock('contextMock' , ['getSession' => $session]);
+        $context = m::mock('contextMock', ['getSession' => $session]);
         $event = m::mock('\Behat\Behat\Event\StepEvent');
         $event->shouldReceive('getContext')->times(1)->andReturn($context);
 
@@ -116,7 +117,7 @@ class ScenarioListenerTest extends \PHPUnit_Framework_TestCase
         $session = m::mock('sessionMock');
         $session->shouldReceive('evaluateScript')->times(1)->andReturn($result);
 
-        $context = m::mock('contextMock' , ['getSession' => $session]);
+        $context = m::mock('contextMock', ['getSession' => $session]);
         $step = m::mock('\Behat\Gherkin\Node\ExampleStepNode', ['getText' => $stepTitle]);
 
         $event = m::mock('\Behat\Behat\Event\StepEvent');
