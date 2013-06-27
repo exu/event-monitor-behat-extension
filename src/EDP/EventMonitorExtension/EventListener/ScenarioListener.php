@@ -33,7 +33,7 @@ class ScenarioListener implements EventSubscriberInterface
         }
 
         if ($outputFileType == 'csv') {
-            `rm {$outputFileName}`;
+            `echo -n > {$outputFileName}`;
             $data = ['date', 'scenario', 'outline no', 'step', 'step no', 'events'];
             $this->writer->write($data);
         }
@@ -51,7 +51,7 @@ class ScenarioListener implements EventSubscriberInterface
     }
 
 
-    public function valid(array $tags=[])
+    public function valid(array $tags = [])
     {
         return in_array("javascript", array_merge($this->featureTags, $tags));
     }
